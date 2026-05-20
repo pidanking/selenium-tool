@@ -7,11 +7,15 @@ import jakarta.validation.constraints.NotEmpty;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+
+import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 @Validated
 @ConfigurationProperties(prefix = "automation")
+@Data
 public class AutomationProperties {
 
     /**
@@ -46,63 +50,18 @@ public class AutomationProperties {
     @Valid
     @NotEmpty
     private List<Target> targets = new ArrayList<>();
-
-    public Schedule getSchedule() {
-        return schedule;
-    }
-
-    public Browser getBrowser() {
-        return browser;
-    }
-
-    public CookieCloud getCookieCloud() {
-        return cookieCloud;
-    }
-
-    public StartupNotification getStartupNotification() {
-        return startupNotification;
-    }
-
-    public boolean isRunOnStartup() {
-        return runOnStartup;
-    }
-
-    public void setRunOnStartup(boolean runOnStartup) {
-        this.runOnStartup = runOnStartup;
-    }
-
-    public List<Target> getTargets() {
-        return targets;
-    }
-
-    public void setTargets(List<Target> targets) {
-        this.targets = targets;
-    }
-
+    @Data
     public static class Schedule {
+        /**
+         * spring 六段式 cron，例如每天 8 点 0 分执行一次
+         */
         @NotBlank
-        private String cron = "0 0 9 * * *";
+        private String cron = "0 0 8 * * *";
 
         @NotBlank
         private String zone = "Asia/Shanghai";
-
-        public String getCron() {
-            return cron;
-        }
-
-        public void setCron(String cron) {
-            this.cron = cron;
-        }
-
-        public String getZone() {
-            return zone;
-        }
-
-        public void setZone(String zone) {
-            this.zone = zone;
-        }
     }
-
+    @Data
     public static class Browser {
         private boolean headless = true;
         private boolean noSandbox = true;
@@ -115,212 +74,87 @@ public class AutomationProperties {
          */
         private String binaryPath;
         private String driverPath;
+        /**
+         * Selenium Manager 下载 ChromeDriver 时使用的代理地址，例如 http://127.0.0.1:7897。
+         * 不配置时将尝试自动检测系统代理；设为空字符串则禁用代理。
+         */
+        private String proxy;
         private List<String> arguments = new ArrayList<>();
-
-        public boolean isHeadless() {
-            return headless;
-        }
-
-        public void setHeadless(boolean headless) {
-            this.headless = headless;
-        }
-
-        public boolean isNoSandbox() {
-            return noSandbox;
-        }
-
-        public void setNoSandbox(boolean noSandbox) {
-            this.noSandbox = noSandbox;
-        }
-
-        public boolean isDisableDevShmUsage() {
-            return disableDevShmUsage;
-        }
-
-        public void setDisableDevShmUsage(boolean disableDevShmUsage) {
-            this.disableDevShmUsage = disableDevShmUsage;
-        }
-
-        public long getPageStaySeconds() {
-            return pageStaySeconds;
-        }
-
-        public void setPageStaySeconds(long pageStaySeconds) {
-            this.pageStaySeconds = pageStaySeconds;
-        }
-
-        public Duration getPageLoadTimeout() {
-            return pageLoadTimeout;
-        }
-
-        public void setPageLoadTimeout(Duration pageLoadTimeout) {
-            this.pageLoadTimeout = pageLoadTimeout;
-        }
-
-        public String getBinaryPath() {
-            return binaryPath;
-        }
-
-        public void setBinaryPath(String binaryPath) {
-            this.binaryPath = binaryPath;
-        }
-
-        public String getDriverPath() {
-            return driverPath;
-        }
-
-        public void setDriverPath(String driverPath) {
-            this.driverPath = driverPath;
-        }
-
-        public List<String> getArguments() {
-            return arguments;
-        }
-
-        public void setArguments(List<String> arguments) {
-            this.arguments = arguments;
-        }
     }
-
+    @Data
     public static class CookieCloud {
-        @NotBlank
-        private String url = "https://CookieCloud地址/cookiecloud/get/";
+        /**
+         * CookieCloud 服务根地址，例如 https://example.com；代码会自动拼接 /cookiecloud/get/{key}。
+         * 未配置时 CookieCloud 功能自动禁用。
+         */
+        private String url;
         /**
          * CookieCloud 的访问 key。
          */
-        private String key = "CookieCloud 的访问 key";
+        private String key;
         /**
          * CookieCloud 的访问密码。
          */
-        private String password = "CookieCloud 的访问密码。";
-        private boolean enabled = true;
-        private Duration refreshInterval = Duration.ofHours(1);
+        private String password;
         private String cacheFile = "cookiecloud-cache.json";
+        /**
+         * 当 CookieCloud 远端获取失败时，是否允许复用之前的缓存文件。
+         * true：允许回退到缓存继续执行；false：直接抛出异常中止任务。
+         */
+        private boolean allowCacheFallback = true;
 
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getKey() {
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
+        /**
+         * 是否启用了 CookieCloud，依据 url 是否已配置有效值判断。
+         */
         public boolean isEnabled() {
-            return enabled;
+            return StringUtils.hasText(url);
         }
 
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        public Duration getRefreshInterval() {
-            return refreshInterval;
-        }
-
-        public void setRefreshInterval(Duration refreshInterval) {
-            this.refreshInterval = refreshInterval;
-        }
-
-        public String getCacheFile() {
-            return cacheFile;
-        }
-
-        public void setCacheFile(String cacheFile) {
-            this.cacheFile = cacheFile;
-        }
     }
-
+    @Data
     public static class Target {
-        @NotBlank
         private String name;
 
         @NotBlank
         private String url;
-
         /**
          * 指定从 CookieCloud 过滤 Cookie 时使用的域名；为空时从 URL 自动提取。
          */
         private String cookieDomain;
         private String warmupPath = "/favicon.ico";
+        private List<LocalStorage> localStorage = new ArrayList<>();
 
         public String getName() {
+            if (name == null || name.isBlank()) {
+                try {
+                    name= java.net.URI.create(url).getHost();
+                    return name;
+                } catch (Exception e) {
+                    return url;
+                }
+            }
             return name;
         }
-
-        public void setName(String name) {
-            this.name = name;
+        @Data
+        public static class LocalStorage {
+            private String key;
+            private String value;
         }
 
-        public String getUrl() {
-            return url;
-        }
-
-        public void setUrl(String url) {
-            this.url = url;
-        }
-
-        public String getCookieDomain() {
-            return cookieDomain;
-        }
-
-        public void setCookieDomain(String cookieDomain) {
-            this.cookieDomain = cookieDomain;
-        }
-
-        public String getWarmupPath() {
-            return warmupPath;
-        }
-
-        public void setWarmupPath(String warmupPath) {
-            this.warmupPath = warmupPath;
-        }
     }
-
+    @Data
     public static class StartupNotification {
-        private boolean enabled = true;
-        @NotBlank
-        private String webhookUrl = "webhook地址";
-        @NotBlank
+        /**
+         * webhook通知地址
+         */
+        private String webhookUrl = "";
         private String message = "selenium-tool启动成功";
 
+        /**
+         * 是否启用了启动通知，依据 webhookUrl 是否已配置有效值判断。
+         */
         public boolean isEnabled() {
-            return enabled;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        public String getWebhookUrl() {
-            return webhookUrl;
-        }
-
-        public void setWebhookUrl(String webhookUrl) {
-            this.webhookUrl = webhookUrl;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
+            return StringUtils.hasText(webhookUrl);
         }
     }
 }

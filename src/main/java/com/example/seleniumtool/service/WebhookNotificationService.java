@@ -49,9 +49,6 @@ public class WebhookNotificationService {
         }
 
         String webhookUrl = properties.getStartupNotification().getWebhookUrl();
-        if (!StringUtils.hasText(webhookUrl)) {
-            return;
-        }
 
         String message = "【selenium-tool】" + status
             + "\n时间: " + LocalDateTime.now().format(TIME_FORMATTER)

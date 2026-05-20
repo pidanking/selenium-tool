@@ -47,7 +47,9 @@ public class AutomationScheduler {
     private String buildScheduledSummary(String content) {
         StringBuilder summary = new StringBuilder(content);
         List<String> failures = automationAlertState.drainTargetFailures();
-        if (!failures.isEmpty()) {
+        if(failures.isEmpty()){
+            summary.append("\n\n全部打开成功");
+        }else{
             summary.append("\n\n打开失败:\n");
             summary.append(String.join("\n\n", failures));
         }

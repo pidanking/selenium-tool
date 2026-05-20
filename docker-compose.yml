@@ -1,15 +1,15 @@
-version: "3.9"
-
 services:
   selenium-tool:
-    image: wangjinjing/selenium-tool:1.0.0
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: linzaixian/selenium-tool:latest
     container_name: selenium-tool
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
-      SE_VNC_PASSWORD: admin
-      SPRING_CONFIG_ADDITIONAL_LOCATION: optional:file:/app/config/
+      SE_VNC_PASSWORD: selenium
     volumes:
-      - ./application.yml:/app/config/application.yml:ro
+      - ./custom.yml:/app/config/custom.yml:ro
     ports:
       - "7900:7900"

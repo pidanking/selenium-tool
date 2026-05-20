@@ -1,7 +1,15 @@
 package com.example.seleniumtool.browser;
 
 import com.example.seleniumtool.config.AutomationProperties;
+import java.io.File;
+import java.io.IOException;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
@@ -10,6 +18,7 @@ import org.openqa.selenium.remote.RemoteWebDriver;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Component
 public class WebDriverFactory {
 
@@ -17,6 +26,51 @@ public class WebDriverFactory {
 
     public WebDriverFactory(AutomationProperties properties) {
         this.properties = properties;
+        writeSeleniumManagerProxyConfig();
+    }
+
+    /**
+     * 在 Selenium Manager 缓存目录下写入 se-config.toml 代理配置，
+     * 使其能通过代理下载 chromedriver。
+     * Rust HTTP 客户端不遵循系统代理，需要显式配置。
+     */
+    private void writeSeleniumManagerProxyConfig() {
+        String proxy = resolveProxy();
+        if (proxy == null) {
+            log.info("未检测到代理配置，Selenium Manager 将直连下载 chromedriver");
+            return;
+        }
+        String content = "proxy = \"" + proxy + "\"" + System.lineSeparator();
+        try {
+            Path cacheDir = getSeleniumCacheDir();
+            Files.createDirectories(cacheDir);
+            Path tomlPath = cacheDir.resolve("se-config.toml");
+            Files.writeString(tomlPath, content);
+            log.info("已写入 Selenium Manager 代理配置: {} -> {}", tomlPath, proxy);
+        } catch (IOException e) {
+            log.warn("写入 se-config.toml 代理配置失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 解析代理地址，优先级：显式配置 > 系统代理自动检测 > null。
+     */
+    private String resolveProxy() {
+        String configuredProxy = properties.getBrowser().getProxy();
+        if (StringUtils.hasText(configuredProxy)) {
+            return configuredProxy.trim();
+        }
+        return null;
+    }
+
+
+    /**
+     * 获取 Selenium Manager 缓存目录路径（跨平台）。
+     * Selenium Manager 在所有平台上默认使用 ~/.cache/selenium。
+     */
+    private Path getSeleniumCacheDir() {
+        String userHome = System.getProperty("user.home");
+        return Path.of(userHome, ".cache", "selenium");
     }
 
     /**
@@ -39,18 +93,31 @@ public class WebDriverFactory {
             options.setBinary(properties.getBrowser().getBinaryPath());
         }
         options.addArguments(properties.getBrowser().getArguments());
+        Duration pageLoadTimeout = properties.getBrowser().getPageLoadTimeout();
+        options.setPageLoadTimeout(pageLoadTimeout);
+        // 为 Chrome 浏览器本身配置代理，使 navigate().to() 等网络请求走代理
+        String proxy = resolveProxy();
+        if (proxy != null) {
+            options.addArguments("--proxy-server=" + proxy);
+            log.info("已为 Chrome 浏览器配置代理: {}", proxy);
+        }
 
         ChromeDriver driver;
         if (StringUtils.hasText(properties.getBrowser().getDriverPath())) {
+            File driverFile = new File(properties.getBrowser().getDriverPath());
+            if (!driverFile.exists()) {
+                throw new IllegalStateException(
+                    "配置的 chromedriver 路径不存在: " + driverFile.getAbsolutePath());
+            }
             ChromeDriverService service = new ChromeDriverService.Builder()
-                .usingDriverExecutable(new java.io.File(properties.getBrowser().getDriverPath()))
+                .usingDriverExecutable(driverFile)
                 .build();
             driver = new ChromeDriver(service, options);
         } else {
+            log.warn("未配置 automation.browser.driver-path，将使用 Selenium Manager 自动下载 ChromeDriver。"
+                + "在国内网络环境下可能极慢或失败，建议手动下载 chromedriver 并配置 driver-path。");
             driver = new ChromeDriver(options);
         }
-        Duration pageLoadTimeout = properties.getBrowser().getPageLoadTimeout();
-        driver.manage().timeouts().pageLoadTimeout(pageLoadTimeout);
         return driver;
     }
 }

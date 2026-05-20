@@ -3,19 +3,19 @@ spring:
     name: selenium-tool
   main:
     banner-mode: "off"
-
-logging:
-  level:
-    root: INFO
-    com.example.seleniumtool: INFO
-
+  profiles:
+    active: dev
+  config:
+    import:
+      # 代理和目标站点配置已拆分到 custom.yml，方便单独修改
+      # JAR 同级目录放置同名文件可覆盖 classpath 中的默认值
+      - "classpath:custom.yml"
+      - "optional:file:/app/config/custom.yml"
 # 自动化任务主配置
 automation:
   # 启动应用后是否立刻执行一次任务
   run-on-startup: true
   schedule:
-    # Spring 六段式 cron，例如每天 9 点执行一次
-    cron: "0 28 14 * * *"
     # 定时任务使用的时区
     zone: "Asia/Shanghai"
   browser:
@@ -26,35 +26,14 @@ automation:
     # Docker 中共享内存较小时建议开启
     disable-dev-shm-usage: true
     # 每个页面打开后的停留时间，单位秒
-    page-stay-seconds: 10
+    page-stay-seconds: 3
     # 页面加载超时时间
-    page-load-timeout: 60s
+    page-load-timeout: 120s
     driver-path:
     # 额外的浏览器启动参数
     arguments:
       - "--window-size=1400,900"
       - "--disable-gpu"
   cookie-cloud:
-    # 是否启用 CookieCloud 拉取 Cookie
-    enabled: true
-    # CookieCloud 接口地址
-    url: "https://CookieCloud 接口地址/cookiecloud/get/"
-    # CookieCloud 访问 key
-    key: "CookieCloud 访问 key"
-    # CookieCloud 访问密码
-    password: "CookieCloud 访问密码"
-    # 要访问的目标网址列表，按顺序逐个执行
-    refresh-interval: 1h
+    # 缓存文件名
     cache-file: "cookiecloud-cache.json"
-  startup-notification:
-    enabled: true
-    webhook-url: "webhook-url"
-    message: "selenium-tool启动成功"
-  targets:
-    # 任务名称，仅用于日志识别
-    - name: "baidu"
-      # 实际访问地址
-      url: "https://www.baidu.com/index.php"
-      # Cookie 过滤域名；不填则从 url 自动提取
-      cookie-domain: "www.baidu.com"
-      warmup-path: "/favicon.ico"
