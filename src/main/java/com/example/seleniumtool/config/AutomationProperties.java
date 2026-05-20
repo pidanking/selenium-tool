@@ -67,8 +67,8 @@ public class AutomationProperties {
         private boolean noSandbox = true;
         private boolean disableDevShmUsage = true;
         @Min(1)
-        private long pageStaySeconds = 60;
-        private Duration pageLoadTimeout = Duration.ofSeconds(60);
+        private long pageStaySeconds = 10;
+        private Duration pageLoadTimeout = Duration.ofMinutes(1);
         /**
          * 浏览器可执行文件路径；本地通常可不填，Docker 中建议显式指定。
          */
@@ -80,6 +80,10 @@ public class AutomationProperties {
          */
         private String proxy;
         private List<String> arguments = new ArrayList<>();
+        /**
+         * 是否通过 CDP (Chrome DevTools Protocol) 阻止 GIF 资源加载，减少带宽消耗和页面渲染负担。
+         */
+        private boolean blockGif = false;
     }
     @Data
     public static class CookieCloud {

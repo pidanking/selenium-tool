@@ -9,11 +9,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.devtools.DevTools;
+import org.openqa.selenium.devtools.v147.network.Network;
 import org.openqa.selenium.remote.RemoteWebDriver;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -118,6 +121,37 @@ public class WebDriverFactory {
                 + "在国内网络环境下可能极慢或失败，建议手动下载 chromedriver 并配置 driver-path。");
             driver = new ChromeDriver(options);
         }
+
+        if (properties.getBrowser().isBlockGif()) {
+            enableGifBlocking(driver);
+        }
+
         return driver;
+    }
+
+    /**
+     * 通过 Chrome DevTools Protocol (CDP) 拦截并阻止 GIF 资源加载。
+     * <p>
+     * 使用 Network.setBlockedURLs 配置 URL 匹配模式，
+     * 浏览器会在网络层直接丢弃匹配的请求，不产生任何流量。
+     * <ul>
+     *   <li>"*.gif" — 匹配以 .gif 结尾的 URL（无查询参数）</li>
+     *   <li>"*.gif?*" — 匹配 .gif 后带查询参数的 URL</li>
+     * </ul>
+     */
+    private void enableGifBlocking(ChromeDriver driver) {
+        try {
+            DevTools devTools = driver.getDevTools();
+            devTools.createSession();
+            devTools.send(Network.enable(
+                    Optional.empty(), Optional.empty(), Optional.empty(),
+                    Optional.empty(), Optional.empty()));
+            devTools.send(Network.setBlockedURLs(
+                    Optional.empty(),
+                    Optional.of(List.of("*.gif", "*.gif?*"))));
+            log.info("已通过 CDP Network.setBlockedURLs 配置阻止 GIF 资源加载");
+        } catch (Exception e) {
+            log.warn("CDP 阻止 GIF 资源配置失败，GIF 将正常加载: {}", e.getMessage());
+        }
     }
 }

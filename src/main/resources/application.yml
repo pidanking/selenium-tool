@@ -34,6 +34,8 @@ automation:
     arguments:
       - "--window-size=1400,900"
       - "--disable-gpu"
+    # 是否通过 CDP 阻止 GIF 资源加载，减少带宽消耗和页面渲染负担
+    block-gif: true
   cookie-cloud:
     # 缓存文件名
     cache-file: "cookiecloud-cache.json"
