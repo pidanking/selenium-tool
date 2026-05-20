@@ -25,17 +25,21 @@ automation:
     no-sandbox: true
     # Docker 中共享内存较小时建议开启
     disable-dev-shm-usage: true
-    # 每个页面打开后的停留时间，单位秒
+    # 每个页面访问成功打开后的停留时间，单位秒
     page-stay-seconds: 3
     # 页面加载超时时间
-    page-load-timeout: 120s
+    page-load-timeout: 2m
     driver-path:
     # 额外的浏览器启动参数
     arguments:
       - "--window-size=1400,900"
       - "--disable-gpu"
-    # 是否通过 CDP 阻止 GIF 资源加载，减少带宽消耗和页面渲染负担
-    block-gif: true
+    # 通过 Chrome prefs 在浏览器层面完全禁止图片加载，比 CDP 拦截更彻底
+    # true：禁止所有图片（默认）；false：不干预
+    disable-images: true
+    # 通过 CDP 阻止指定后缀的资源加载，列表为空则不启用拦截
+    # 示例后缀：gif、png、jpg、jpeg、webp、svg、bmp、ico
+    block-resource-suffixes:
   cookie-cloud:
     # 缓存文件名
     cache-file: "cookiecloud-cache.json"

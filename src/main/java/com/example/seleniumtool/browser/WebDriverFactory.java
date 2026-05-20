@@ -3,13 +3,15 @@ package com.example.seleniumtool.browser;
 import com.example.seleniumtool.config.AutomationProperties;
 import java.io.File;
 import java.io.IOException;
-import java.net.ProxySelector;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.PageLoadStrategy;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -66,7 +68,6 @@ public class WebDriverFactory {
         return null;
     }
 
-
     /**
      * 获取 Selenium Manager 缓存目录路径（跨平台）。
      * Selenium Manager 在所有平台上默认使用 ~/.cache/selenium。
@@ -82,6 +83,13 @@ public class WebDriverFactory {
     public RemoteWebDriver createChromeDriver() {
         ChromeOptions options = new ChromeOptions();
         options.setPageLoadStrategy(PageLoadStrategy.NORMAL);
+
+        if (properties.getBrowser().isDisableImages()) {
+            Map<String, Object> prefs = new HashMap<>();
+            prefs.put("profile.managed_default_content_settings.images", 2);
+            options.setExperimentalOption("prefs", prefs);
+            log.info("已通过 Chrome prefs 禁止图片加载 (managed_default_content_settings.images=2)");
+        }
 
         if (properties.getBrowser().isHeadless()) {
             options.addArguments("--headless=new");
@@ -122,36 +130,38 @@ public class WebDriverFactory {
             driver = new ChromeDriver(options);
         }
 
-        if (properties.getBrowser().isBlockGif()) {
-            enableGifBlocking(driver);
+        List<String> suffixes = properties.getBrowser().getBlockResourceSuffixes();
+        if (suffixes != null && !suffixes.isEmpty()) {
+            enableResourceBlocking(driver, suffixes);
         }
 
         return driver;
     }
 
     /**
-     * 通过 Chrome DevTools Protocol (CDP) 拦截并阻止 GIF 资源加载。
+     * 通过 Chrome DevTools Protocol (CDP) 按后缀阻止指定资源加载。
      * <p>
-     * 使用 Network.setBlockedURLs 配置 URL 匹配模式，
-     * 浏览器会在网络层直接丢弃匹配的请求，不产生任何流量。
-     * <ul>
-     *   <li>"*.gif" — 匹配以 .gif 结尾的 URL（无查询参数）</li>
-     *   <li>"*.gif?*" — 匹配 .gif 后带查询参数的 URL</li>
-     * </ul>
+     * 根据配置的后缀列表动态构建 URL 匹配模式（含和不含查询参数两种形式），
+     * 通过 Network.setBlockedURLs 在网络层直接丢弃匹配请求，不产生任何流量。
+     * <p>
+     * 示例后缀：gif、png、jpg、jpeg、webp、svg、bmp、ico
+     *
+     * @param suffixes 需要阻止的资源文件后缀列表（不含点号）
      */
-    private void enableGifBlocking(ChromeDriver driver) {
+    private void enableResourceBlocking(ChromeDriver driver, List<String> suffixes) {
         try {
+            List<String> patterns = suffixes.stream()
+                    .flatMap(ext -> Stream.of("*." + ext, "*." + ext + "?*"))
+                    .toList();
             DevTools devTools = driver.getDevTools();
-            devTools.createSession();
+            devTools.createSessionIfThereIsNotOne();
             devTools.send(Network.enable(
                     Optional.empty(), Optional.empty(), Optional.empty(),
                     Optional.empty(), Optional.empty()));
-            devTools.send(Network.setBlockedURLs(
-                    Optional.empty(),
-                    Optional.of(List.of("*.gif", "*.gif?*"))));
-            log.info("已通过 CDP Network.setBlockedURLs 配置阻止 GIF 资源加载");
+            devTools.send(Network.setBlockedURLs(Optional.empty(), Optional.of(patterns)));
+            log.info("已通过 CDP Network.setBlockedURLs 阻止以下后缀资源加载: {}", suffixes);
         } catch (Exception e) {
-            log.warn("CDP 阻止 GIF 资源配置失败，GIF 将正常加载: {}", e.getMessage());
+            log.warn("CDP 资源阻止配置失败，相关资源将正常加载: {}", e.getMessage());
         }
     }
 }

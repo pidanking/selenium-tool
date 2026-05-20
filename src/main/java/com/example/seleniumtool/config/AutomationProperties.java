@@ -81,9 +81,18 @@ public class AutomationProperties {
         private String proxy;
         private List<String> arguments = new ArrayList<>();
         /**
-         * 是否通过 CDP (Chrome DevTools Protocol) 阻止 GIF 资源加载，减少带宽消耗和页面渲染负担。
+         * 通过 Chrome 偏好设置（profile.managed_default_content_settings.images=2）
+         * 在浏览器层面完全禁止图片加载，比 CDP 拦截更彻底，适合完全不需要图片的场景。
+         * true：禁止所有图片（默认）；false：不干预图片加载。
          */
-        private boolean blockGif = false;
+        private boolean disableImages = true;
+        /**
+         * 通过 CDP (Chrome DevTools Protocol) 阻止指定后缀资源加载的后缀列表。
+         * 列表中每个条目为文件后缀（不含点号），例如 gif、png、jpg。
+         * 列表为空时不启用资源拦截功能。
+         * 示例：["gif", "png", "jpg", "jpeg", "webp", "svg", "bmp", "ico"]
+         */
+        private List<String> blockResourceSuffixes = new ArrayList<>();
     }
     @Data
     public static class CookieCloud {
