@@ -1,14 +1,11 @@
 services:
   selenium-tool:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: linzaixian/selenium-tool:latest
+    image: wangjinjing/selenium-tool:1.0.0
     container_name: selenium-tool
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
-      SE_VNC_PASSWORD: selenium
+      SE_VNC_PASSWORD: admin
     volumes:
       - ./custom.yml:/app/config/custom.yml:ro
     ports:
