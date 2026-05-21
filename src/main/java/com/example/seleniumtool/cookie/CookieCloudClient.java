@@ -2,14 +2,10 @@ package com.example.seleniumtool.cookie;
 
 import com.example.seleniumtool.config.AutomationProperties;
 import com.example.seleniumtool.service.AutomationAlertState;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -19,15 +15,12 @@ import java.util.Set;
 import java.util.StringJoiner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 @Component
 public class CookieCloudClient {
@@ -36,51 +29,19 @@ public class CookieCloudClient {
 
     private final AutomationProperties properties;
     private final AutomationAlertState automationAlertState;
-    private final RestTemplate restTemplate;
+    private final RestClient restClient;
     private final ObjectMapper objectMapper;
 
     public CookieCloudClient(
         AutomationProperties properties,
         AutomationAlertState automationAlertState,
-        RestTemplateBuilder builder,
         ObjectMapper objectMapper
     ) {
         this.properties = properties;
         this.automationAlertState = automationAlertState;
-        this.restTemplate = builder.build();
+        this.restClient = RestClient.create();
         this.objectMapper = objectMapper;
     }
-
-    public List<CookieCloudCookie> getCookiesForDomain(String targetUrl, String configuredDomain) {
-        if (!properties.getCookieCloud().isEnabled()) {
-            log.info("CookieCloud 已禁用，跳过目标 {} 的 Cookie 解析", targetUrl);
-            return List.of();
-        }
-
-        JsonNode body = getCookiePayload();
-        if (body == null || body.isNull()) {
-            log.warn("CookieCloud 返回空数据，目标 {}", targetUrl);
-            return List.of();
-        }
-
-        JsonNode cookieData = body.path("cookie_data");
-        if (cookieData.isMissingNode() || cookieData.isNull() || !cookieData.isObject()) {
-            log.warn("CookieCloud 返回结果中缺少 cookie_data，目标 {}", targetUrl);
-            return List.of();
-        }
-
-        String domain = resolveDomain(targetUrl, configuredDomain);
-        Set<String> allowedDomains = buildAllowedDomains(domain);
-        log.info("开始为目标 [{}] 解析 Cookie，配置域名 [{}]，允许匹配域名 {}", targetUrl, configuredDomain, allowedDomains);
-
-        List<CookieCloudCookie> matches = collectCookiesFromCookieData(cookieData, allowedDomains);
-        log.info("域名 [{}] 共解析到 {} 个 Cookie", domain, matches.size());
-        if (!matches.isEmpty()) {
-            log.info("域名 [{}] 的 Cookie Header: {}", domain, buildCookieHeader(matches));
-        }
-        return matches;
-    }
-
     public String buildCookieHeader(List<CookieCloudCookie> cookies) {
         StringJoiner joiner = new StringJoiner("; ");
         for (CookieCloudCookie cookie : cookies) {
@@ -90,42 +51,48 @@ public class CookieCloudClient {
     }
 
     private synchronized JsonNode getCookiePayload() {
-        Path cacheFile = resolveCacheFile();
-        JsonNode cachedPayload = readCache(cacheFile);
-        if (cachedPayload != null && isCacheFresh(cacheFile)) {
-            log.info("使用本地 CookieCloud 缓存 {}", cacheFile);
-            return cachedPayload;
-        }
-
         JsonNode remotePayload = fetchRemotePayload();
         if (remotePayload != null && !remotePayload.isNull()) {
+            Path cacheFile = resolveCacheFile();
             writeCache(cacheFile, remotePayload);
             return remotePayload;
         }
 
+        // 远端获取失败，尝试回退到缓存
+        Path cacheFile = resolveCacheFile();
+        JsonNode cachedPayload = readCache(cacheFile);
         if (cachedPayload != null) {
-            log.warn("远端获取失败，回退到旧的 CookieCloud 缓存 {}", cacheFile);
-            return cachedPayload;
+            if (properties.getCookieCloud().isAllowCacheFallback()) {
+                log.warn("远端获取失败，回退到旧的 CookieCloud 缓存 {}", cacheFile);
+                return cachedPayload;
+            } else {
+                throw new IllegalStateException(
+                    "CookieCloud 远端获取失败且 allow-cache-fallback 为 false，中止任务。缓存文件: " + cacheFile);
+            }
         }
 
-        return null;
+        // 既没有远端数据也没有缓存
+        if (properties.getCookieCloud().isAllowCacheFallback()) {
+            log.warn("CookieCloud 远端获取失败且无本地缓存，将使用空 Cookie 继续");
+            return null;
+        } else {
+            throw new IllegalStateException(
+                "CookieCloud 远端获取失败、无本地缓存且 allow-cache-fallback 为 false，中止任务");
+        }
     }
 
     private JsonNode fetchRemotePayload() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
         Map<String, String> requestBody = Map.of("password", properties.getCookieCloud().getPassword());
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                buildEndpointUrl(),
-                HttpMethod.POST,
-                new HttpEntity<>(requestBody, headers),
-                String.class
-            );
-            log.info("CookieCloud 请求成功，状态码 {}", response.getStatusCode());
-            return parsePayload(response.getBody());
+            String responseBody = restClient.post()
+                .uri(buildEndpointUrl())
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.APPLICATION_JSON)
+                .body(requestBody)
+                .retrieve()
+                .body(String.class);
+            log.info("CookieCloud 请求成功");
+            return parsePayload(responseBody);
         } catch (Exception ex) {
             automationAlertState.addStartupWarning(buildCookieCloudWarning(ex));
             log.warn("CookieCloud 调不通，将继续使用缓存或空 Cookie", ex);
@@ -133,25 +100,18 @@ public class CookieCloudClient {
         }
     }
 
+    private static final String COOKIE_CLOUD_API_PATH = "cookiecloud/get/";
+
     private String buildEndpointUrl() {
         String url = properties.getCookieCloud().getUrl();
         String key = properties.getCookieCloud().getKey();
         if (!StringUtils.hasText(url)) {
             throw new IllegalStateException("CookieCloud 地址不能为空");
         }
-        if (!StringUtils.hasText(key)) {
-            return url;
+        if (!url.endsWith("/")) {
+            url = url + "/";
         }
-        if (url.contains("{key}")) {
-            return url.replace("{key}", key);
-        }
-        if (url.endsWith("/")) {
-            return url + key;
-        }
-        if (url.endsWith(key)) {
-            return url;
-        }
-        return url + "/" + key;
+        return url + COOKIE_CLOUD_API_PATH + key;
     }
 
     private JsonNode parsePayload(String body) {
@@ -173,21 +133,47 @@ public class CookieCloudClient {
         return path.isAbsolute() ? path : path.toAbsolutePath().normalize();
     }
 
-    private boolean isCacheFresh(Path cacheFile) {
-        try {
-            if (!Files.exists(cacheFile)) {
-                return false;
-            }
-            Duration refreshInterval = properties.getCookieCloud().getRefreshInterval();
-            if (refreshInterval == null || refreshInterval.isZero() || refreshInterval.isNegative()) {
-                return false;
-            }
-            Instant lastModified = Files.getLastModifiedTime(cacheFile).toInstant();
-            return lastModified.plus(refreshInterval).isAfter(Instant.now());
-        } catch (Exception ex) {
-            log.warn("检查 CookieCloud 缓存是否新鲜时失败 {}", cacheFile, ex);
-            return false;
+    /**
+     * 一次性从 CookieCloud 获取全量 Cookie 数据，供外部在循环前统一调用，避免循环中重复获取。
+     *
+     * @return CookieCloud 返回的 cookie_data 节点；CookieCloud 禁用时返回 null。
+     */
+    public JsonNode fetchAllCookies() {
+        if (!properties.getCookieCloud().isEnabled()) {
+            log.info("CookieCloud 已禁用，跳过 Cookie 获取");
+            return null;
         }
+        JsonNode body = getCookiePayload();
+        if (body == null || body.isNull()) {
+            log.warn("CookieCloud 返回空数据");
+            return null;
+        }
+        JsonNode cookieData = body.path("cookie_data");
+        if (cookieData.isMissingNode() || cookieData.isNull() || !cookieData.isObject()) {
+            log.warn("CookieCloud 返回结果中缺少 cookie_data");
+            return null;
+        }
+        return cookieData;
+    }
+
+    /**
+     * 根据已获取的 cookieData 和目标域名过滤 Cookie。
+     *
+     * @param cookieData    由 {@link #fetchAllCookies()} 返回的 cookie_data 节点
+     * @param targetUrl     目标 URL
+     * @param configuredDomain 配置的 Cookie 域名
+     * @return 匹配的 Cookie 列表
+     */
+    public List<CookieCloudCookie> filterCookiesForDomain(JsonNode cookieData, String targetUrl, String configuredDomain) {
+        String domain = resolveDomain(targetUrl, configuredDomain);
+        Set<String> allowedDomains = buildAllowedDomains(domain);
+        log.info("开始为目标解析 Cookie，配置域名 [{}]，允许匹配域名 {}", configuredDomain, allowedDomains);
+        List<CookieCloudCookie> matches = collectCookiesFromCookieData(cookieData, allowedDomains);
+        log.info("域名 [{}] 共解析到 {} 个 Cookie", domain, matches.size());
+        if (!matches.isEmpty()) {
+            log.info("域名 [{}] 的 Cookie Header: {}", domain, buildCookieHeader(matches));
+        }
+        return matches;
     }
 
     private JsonNode readCache(Path cacheFile) {
@@ -217,7 +203,7 @@ public class CookieCloudClient {
 
     private List<CookieCloudCookie> collectCookiesFromCookieData(JsonNode cookieData, Set<String> allowedDomains) {
         List<CookieCloudCookie> output = new ArrayList<>();
-        cookieData.fields().forEachRemaining(entry -> {
+        cookieData.properties().forEach(entry -> {
             String cookieDataDomain = normalizeDomain(entry.getKey());
             if (!domainMatches(cookieDataDomain, allowedDomains)) {
                 return;

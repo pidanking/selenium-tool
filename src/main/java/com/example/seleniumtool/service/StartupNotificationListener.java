@@ -13,8 +13,8 @@ import org.springframework.util.StringUtils;
 
 public class StartupNotificationListener implements ApplicationListener<ApplicationEvent> {
 
-    private static final String ENABLED_KEY = "automation.startup-notification.enabled";
     private static final String WEBHOOK_URL_KEY = "automation.startup-notification.webhook-url";
+    private static final String DEFAULT_WEBHOOK_PLACEHOLDER = "webhook地址";
     private static final String DEFAULT_FAILURE_MESSAGE = "selenium-tool启动失败";
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -28,12 +28,9 @@ public class StartupNotificationListener implements ApplicationListener<Applicat
 
     private void sendFailure(ApplicationFailedEvent event) {
         Environment environment = event.getApplicationContext() != null ? event.getApplicationContext().getEnvironment() : null;
-        if (!isEnabled(environment)) {
-            return;
-        }
 
         String webhookUrl = environment != null ? environment.getProperty(WEBHOOK_URL_KEY, "") : "";
-        if (!StringUtils.hasText(webhookUrl)) {
+        if (!StringUtils.hasText(webhookUrl) || DEFAULT_WEBHOOK_PLACEHOLDER.equals(webhookUrl)) {
             return;
         }
 
@@ -52,13 +49,6 @@ public class StartupNotificationListener implements ApplicationListener<Applicat
             );
         } catch (Exception ignored) {
         }
-    }
-
-    private boolean isEnabled(Environment environment) {
-        if (environment == null) {
-            return true;
-        }
-        return Boolean.parseBoolean(environment.getProperty(ENABLED_KEY, "true"));
     }
 
     private String extractExceptionMessage(Throwable throwable) {

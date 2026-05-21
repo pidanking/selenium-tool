@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.1.12</version>
+        <version>4.0.5</version>
         <relativePath/>
     </parent>
 
@@ -18,7 +18,7 @@
 
     <properties>
         <java.version>17</java.version>
-        <selenium.version>4.25.0</selenium.version>
+        <selenium.version>4.43.0</selenium.version>
     </properties>
 
     <dependencyManagement>
@@ -62,6 +62,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -74,6 +79,54 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.3</version>
+                <configuration>
+                    <!-- 1. 配置目标镜像仓库 -->
+                    <to>
+                        <!-- 格式：docker.io/你的DockerHub用户名/镜像名称:版本号 -->
+                        <image>docker.io/linzaixian/selenium-tool:latest</image>
+                    </to>
+                    <!-- 2. 配置基础镜像 -->
+                    <from>
+                        <image>selenium/standalone-chrome:latest</image>
+                    </from>
+                    <!-- 3. 容器配置 (WORKDIR, ENV, EXPOSE, ENTRYPOINT) -->
+                    <container>
+                        <!-- WORKDIR /app -->
+                        <workingDirectory>/app</workingDirectory>
+                        <!-- ENV TZ=Asia/Shanghai -->
+                        <environment>
+                            <TZ>Asia/Shanghai</TZ>
+                        </environment>
+                        <!-- EXPOSE 7900 -->
+                        <ports>
+                            <port>7900</port>
+                        </ports>
+                        <!-- 入口点 (ENTRYPOINT) -->
+                        <entrypoint>
+                            <!-- 注意：这里需要把 Dockerfile 中的后台进程和前台 Java 进程组合成一个命令 -->
+                            <arg>/bin/bash</arg>
+                            <arg>-lc</arg>
+                            <arg><![CDATA[/opt/bin/entry_point.sh >/tmp/selenium-base.log 2>&1 & exec java -jar /app/app.jar]]></arg>
+                        </entrypoint>
+                    </container>
+                    <!-- 4. 输出目录：复制 JAR 文件 (COPY) -->
+                    <extraDirectories>
+                        <paths>
+                            <path>
+                                <from>${project.build.directory}</from>
+                                <into>/app</into>
+                                <includes>
+                                    <include>${project.build.finalName}.jar</include>
+                                </includes>
+                            </path>
+                        </paths>
+                    </extraDirectories>
+                </configuration>
             </plugin>
         </plugins>
     </build>
