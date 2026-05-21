@@ -1,6 +1,4 @@
 automation:
-  # 启动应用后是否立刻执行一次任务
-  run-on-startup: true
   schedule:
     # Spring 六段式 cron，例如每天 10 点 0 分执行一次
     cron: "0 0 10 * * *"
