@@ -239,6 +239,9 @@ public class BrowserAutomationService {
             return wait.until(d -> {
                 String title = d.getTitle();
                 if (StringUtils.hasText(title)) {
+                    if(title.contains("异地")||title.contains("2fa")){
+                        return null;
+                    }
                     if (title.contains("首页") || title.contains("首頁")) {
                         return true;
                     }
