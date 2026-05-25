@@ -232,6 +232,9 @@ public class BrowserAutomationService {
             throw new IllegalStateException("浏览器自动化任务被中断", ex);
         }
     }
+    private final String[] FAIL_TITLE = {"登录", "登録", "异地", "2fa", "Login"};
+    private final String[] SUCCESS_TITLE = {"首页", "首頁"};
+    private final String[] SUCCESS_PAGE = {"首页", "首頁", "Torrents", "种子"};
 
     private boolean checkTargetStatus(RemoteWebDriver driver, AutomationProperties.Target target) {
         try {
@@ -239,20 +242,26 @@ public class BrowserAutomationService {
             return wait.until(d -> {
                 String title = d.getTitle();
                 if (StringUtils.hasText(title)) {
-                    if(title.contains("异地")||title.contains("2fa")){
-                        return null;
+                    for (String failTitle : FAIL_TITLE) {
+                        if (title.contains(failTitle)) {
+                            return false;
+                        }
                     }
-                    if (title.contains("首页") || title.contains("首頁")) {
-                        return true;
+                    for (String successTitle : SUCCESS_TITLE) {
+                        if (title.contains(successTitle)) {
+                            return true;
+                        }
+                    }
+                    String pageSource = d.getPageSource();
+                    if (StringUtils.hasText(pageSource)) {
+                        for (String successPage : SUCCESS_PAGE) {
+                            if (pageSource.contains(successPage)) {
+                                return true;
+                            }
+                        }
                     }
                 }
-                String pageSource = d.getPageSource();
-                if (StringUtils.hasText(pageSource)) {
-                    if (pageSource.contains("首页") || pageSource.contains("种子") || pageSource.contains("Torrents")) {
-                        return true;
-                    }
-                }
-                return null;
+                return false;
             });
         } catch (TimeoutException e) {
             log.warn("目标 [{}] 等待页面加载超时，未匹配到预期内容", target.getName());
