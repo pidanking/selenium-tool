@@ -4,7 +4,7 @@ automation:
     cron: "0 0 10 * * *"
   browser:
     # Selenium Manager 下载 chromedriver 及 Chrome 浏览器访问 URL 时使用的代理地址
-    # 例如 http://127.0.0.1:7897；不配置时将尝试自动检测系统代理；设为空字符串则禁用代理
+    # 例如 http://127.0.0.1:7897；不配置时将禁用代理
     proxy:
   cookie-cloud:
     # cookieCloud 服务根地址，代码会自动拼接 /cookiecloud/get/{key}；未配置时 CookieCloud 功能自动禁用
