@@ -4,6 +4,7 @@ import com.example.seleniumtool.browser.WebDriverFactory;
 import com.example.seleniumtool.config.AutomationProperties;
 import com.example.seleniumtool.cookie.CookieCloudClient;
 import com.example.seleniumtool.cookie.CookieCloudCookie;
+import com.example.seleniumtool.cookie.CookieStoreService;
 import jakarta.annotation.PreDestroy;
 
 import java.net.URI;
@@ -41,6 +42,7 @@ public class BrowserAutomationService {
     private final AutomationProperties properties;
     private final WebDriverFactory webDriverFactory;
     private final CookieCloudClient cookieCloudClient;
+    private final CookieStoreService cookieStoreService;
     private final AutomationAlertState automationAlertState;
     private final WebhookNotificationService webhookNotificationService;
 
@@ -50,12 +52,14 @@ public class BrowserAutomationService {
             AutomationProperties properties,
             WebDriverFactory webDriverFactory,
             CookieCloudClient cookieCloudClient,
+            CookieStoreService cookieStoreService,
             AutomationAlertState automationAlertState,
             WebhookNotificationService webhookNotificationService
     ) {
         this.properties = properties;
         this.webDriverFactory = webDriverFactory;
         this.cookieCloudClient = cookieCloudClient;
+        this.cookieStoreService = cookieStoreService;
         this.automationAlertState = automationAlertState;
         this.webhookNotificationService = webhookNotificationService;
     }
@@ -127,7 +131,9 @@ public class BrowserAutomationService {
         driver.manage().deleteAllCookies();
         log.info("已清除目标 [{}] 预热页面上的所有旧 Cookie", target.getName());
 
+        // 合并手动配置的 Cookie 和 CookieCloud 的 Cookie
         List<CookieCloudCookie> cookies;
+        List<CookieCloudCookie> manualCookies = cookieStoreService.toCookieCloudCookies(target.getName());
         if (cookieData != null) {
             cookies = cookieCloudClient.filterCookiesForDomain(
                     cookieData,
@@ -138,6 +144,19 @@ public class BrowserAutomationService {
             cookies = List.of();
         }
 
+        // 手动 Cookie 优先，合并去重
+        java.util.LinkedHashMap<String, CookieCloudCookie> merged = new java.util.LinkedHashMap<>();
+        for (CookieCloudCookie mc : manualCookies) {
+            merged.put(mc.getName() + "@" + mc.getDomain(), mc);
+        }
+        for (CookieCloudCookie cc : cookies) {
+            merged.putIfAbsent(cc.getName() + "@" + cc.getDomain(), cc);
+        }
+        cookies = new java.util.ArrayList<>(merged.values());
+
+        if (!manualCookies.isEmpty()) {
+            log.info("目标 [{}] 合并了 {} 个手动配置的 Cookie", target.getName(), manualCookies.size());
+        }
         if (cookies.isEmpty()) {
             log.warn("目标 [{}] 未解析到任何 CookieCloud Cookie，配置域名 [{}]", target.getName(), target.getCookieDomain());
         } else {

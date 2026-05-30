@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie 管理 - selenium-tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        .header { background: #1a1a2e; color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 18px; font-weight: 500; }
+        .header a { color: #8b8bff; text-decoration: none; font-size: 14px; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 0 16px; }
+        .stats { display: flex; gap: 16px; margin-bottom: 20px; }
+        .stat-card { background: #fff; border-radius: 8px; padding: 16px 20px; flex: 1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .stat-card .label { font-size: 13px; color: #888; }
+        .stat-card .value { font-size: 28px; font-weight: 600; color: #1a1a2e; }
+        .target-section { background: #fff; border-radius: 8px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow: hidden; }
+        .target-header { padding: 14px 20px; background: #fafafa; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .target-header:hover { background: #f0f0f0; }
+        .target-info { display: flex; align-items: center; gap: 12px; }
+        .target-name { font-weight: 600; font-size: 15px; }
+        .target-url { color: #888; font-size: 13px; }
+        .target-count { background: #e8e8ff; color: #555; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+        .target-actions { display: flex; gap: 8px; }
+        .cookie-table { width: 100%; border-collapse: collapse; }
+        .cookie-table th { text-align: left; padding: 10px 16px; background: #fafafa; font-size: 13px; color: #666; font-weight: 500; border-bottom: 1px solid #eee; }
+        .cookie-table td { padding: 10px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .cookie-table tr:hover td { background: #fafafa; }
+        .cookie-value { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: monospace; font-size: 12px; color: #555; }
+        .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px; }
+        .tag-secure { background: #e6f7e6; color: #2d8a2d; }
+        .tag-httponly { background: #fff3e0; color: #e67e00; }
+        .btn { padding: 6px 14px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .btn-primary { background: #4a6cf7; color: #fff; }
+        .btn-primary:hover { background: #3a5ce7; }
+        .btn-danger { background: #ff4d4f; color: #fff; }
+        .btn-danger:hover { background: #e03e3f; }
+        .btn-ghost { background: transparent; color: #666; border: 1px solid #ddd; }
+        .btn-ghost:hover { background: #f5f5f5; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .empty { padding: 40px; text-align: center; color: #aaa; }
+        .empty-icon { font-size: 36px; margin-bottom: 8px; }
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: #fff; border-radius: 12px; width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+        .modal-header h2 { font-size: 16px; }
+        .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #999; padding: 4px; }
+        .modal-body { padding: 20px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #555; margin-bottom: 4px; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #4a6cf7; box-shadow: 0 0 0 2px rgba(74,108,247,0.15); }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+        .form-check { display: flex; align-items: center; gap: 6px; }
+        .form-check input { width: auto; }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 8px; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; color: #fff; font-size: 14px; z-index: 2000; animation: slideIn 0.3s; }
+        .toast-success { background: #52c41a; }
+        .toast-error { background: #ff4d4f; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .actions-bar { display: flex; gap: 8px; margin-bottom: 16px; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🍪 Cookie 管理</h1>
+        <a href="/">← 返回首页</a>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">目标站点</div>
+                <div class="value" id="statTargets">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Cookie 总数</div>
+                <div class="value" id="statCookies">-</div>
+            </div>
+        </div>
+
+        <div class="actions-bar">
+            <button class="btn btn-ghost" onclick="loadData()">🔄 刷新</button>
+            <button class="btn btn-primary" onclick="openAddModal()">+ 添加 Cookie</button>
+        </div>
+
+        <div id="targetList"></div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modalTitle">添加 Cookie</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label>目标站点 *</label>
+                    <select id="fTargetName"></select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>域名 *</label>
+                        <input type="text" id="fDomain" placeholder="example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>路径</label>
+                        <input type="text" id="fPath" placeholder="/" value="/">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>名称 *</label>
+                        <input type="text" id="fName" placeholder="cookie_name">
+                    </div>
+                    <div class="form-group">
+                        <label>值 *</label>
+                        <input type="text" id="fValue" placeholder="cookie_value">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="fSecure">
+                            <label for="fSecure">Secure</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="form-check">
+                            <input type="checkbox" id="fHttpOnly">
+                            <label for="fHttpOnly">HttpOnly</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>备注</label>
+                    <input type="text" id="fRemark" placeholder="可选备注">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveCookie()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let targetData = [];
+
+        async function loadData() {
+            try {
+                const resp = await fetch('/api/cookies/targets');
+                const data = await resp.json();
+                targetData = data.targets || [];
+                document.getElementById('statTargets').textContent = targetData.length;
+                document.getElementById('statCookies').textContent = data.totalCookies || 0;
+                renderTargets();
+            } catch (e) {
+                toast('加载失败: ' + e.message, 'error');
+            }
+        }
+
+        function renderTargets() {
+            const container = document.getElementById('targetList');
+            if (targetData.length === 0) {
+                container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div>暂无目标站点</div>';
+                return;
+            }
+            container.innerHTML = targetData.map(t => {
+                const cookies = t.cookies || [];
+                return `
+                <div class="target-section">
+                    <div class="target-header" onclick="toggleTarget(this)">
+                        <div class="target-info">
+                            <span class="target-name">${esc(t.name)}</span>
+                            <span class="target-url">${esc(t.url)}</span>
+                            <span class="target-count">${cookies.length} cookies</span>
+                        </div>
+                        <div class="target-actions" onclick="event.stopPropagation()">
+                            <button class="btn btn-primary btn-sm" onclick="openAddModal('${esc(t.name)}','${esc(t.cookieDomain||'')}')">+ 添加</button>
+                            ${cookies.length > 0 ? `<button class="btn btn-danger btn-sm" onclick="deleteAll('${esc(t.name)}')">清空</button>` : ''}
+                        </div>
+                    </div>
+                    ${cookies.length > 0 ? `
+                    <table class="cookie-table">
+                        <thead><tr>
+                            <th>名称</th><th>值</th><th>域名</th><th>路径</th><th>标记</th><th>备注</th><th>操作</th>
+                        </tr></thead>
+                        <tbody>
+                        ${cookies.map(c => `<tr>
+                            <td><strong>${esc(c.name)}</strong></td>
+                            <td><div class="cookie-value" title="${esc(c.value)}">${esc(c.value)}</div></td>
+                            <td>${esc(c.domain)}</td>
+                            <td>${esc(c.path)}</td>
+                            <td>
+                                ${c.secure ? '<span class="tag tag-secure">Secure</span>' : ''}
+                                ${c.httpOnly ? '<span class="tag tag-httponly">HttpOnly</span>' : ''}
+                            </td>
+                            <td>${esc(c.remark||'')}</td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm" onclick='editCookie(${JSON.stringify(c)})'>编辑</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteCookie('${c.id}')">删除</button>
+                            </td>
+                        </tr>`).join('')}
+                        </tbody>
+                    </table>` : '<div class="empty" style="padding:20px">暂无 Cookie</div>'}
+                </div>`;
+            }).join('');
+        }
+
+        function toggleTarget(el) {
+            const table = el.nextElementSibling;
+            if (table) table.style.display = table.style.display === 'none' ? '' : 'none';
+        }
+
+        function openAddModal(targetName, domain) {
+            document.getElementById('editId').value = '';
+            document.getElementById('modalTitle').textContent = '添加 Cookie';
+            document.getElementById('fDomain').value = domain || '';
+            document.getElementById('fName').value = '';
+            document.getElementById('fValue').value = '';
+            document.getElementById('fPath').value = '/';
+            document.getElementById('fSecure').checked = false;
+            document.getElementById('fHttpOnly').checked = false;
+            document.getElementById('fRemark').value = '';
+            const sel = document.getElementById('fTargetName');
+            sel.innerHTML = targetData.map(t =>
+                `<option value="${esc(t.name)}" ${t.name===targetName?'selected':''}>${esc(t.name)} (${esc(t.url)})</option>`
+            ).join('');
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function editCookie(c) {
+            document.getElementById('editId').value = c.id;
+            document.getElementById('modalTitle').textContent = '编辑 Cookie';
+            document.getElementById('fDomain').value = c.domain || '';
+            document.getElementById('fName').value = c.name || '';
+            document.getElementById('fValue').value = c.value || '';
+            document.getElementById('fPath').value = c.path || '/';
+            document.getElementById('fSecure').checked = !!c.secure;
+            document.getElementById('fHttpOnly').checked = !!c.httpOnly;
+            document.getElementById('fRemark').value = c.remark || '';
+            const sel = document.getElementById('fTargetName');
+            sel.innerHTML = targetData.map(t =>
+                `<option value="${esc(t.name)}" ${t.name===c.targetName?'selected':''}>${esc(t.name)} (${esc(t.url)})</option>`
+            ).join('');
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        async function saveCookie() {
+            const id = document.getElementById('editId').value;
+            const entry = {
+                targetName: document.getElementById('fTargetName').value,
+                domain: document.getElementById('fDomain').value,
+                name: document.getElementById('fName').value,
+                value: document.getElementById('fValue').value,
+                path: document.getElementById('fPath').value,
+                secure: document.getElementById('fSecure').checked,
+                httpOnly: document.getElementById('fHttpOnly').checked,
+                remark: document.getElementById('fRemark').value,
+            };
+            if (!entry.domain || !entry.name || !entry.value) {
+                toast('请填写域名、名称和值', 'error');
+                return;
+            }
+            try {
+                const url = id ? `/api/cookies/${id}` : '/api/cookies';
+                const method = id ? 'PUT' : 'POST';
+                const resp = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(entry) });
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                closeModal();
+                toast(id ? '更新成功' : '添加成功', 'success');
+                loadData();
+            } catch (e) {
+                toast('保存失败: ' + e.message, 'error');
+            }
+        }
+
+        async function deleteCookie(id) {
+            if (!confirm('确定删除此 Cookie？')) return;
+            try {
+                await fetch(`/api/cookies/${id}`, { method: 'DELETE' });
+                toast('已删除', 'success');
+                loadData();
+            } catch (e) {
+                toast('删除失败', 'error');
+            }
+        }
+
+        async function deleteAll(targetName) {
+            if (!confirm(`确定清空 ${targetName} 下所有 Cookie？`)) return;
+            try {
+                await fetch(`/api/cookies/target/${encodeURIComponent(targetName)}`, { method: 'DELETE' });
+                toast('已清空', 'success');
+                loadData();
+            } catch (e) {
+                toast('操作失败', 'error');
+            }
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+        function toast(msg, type) {
+            const el = document.createElement('div');
+            el.className = 'toast toast-' + type;
+            el.textContent = msg;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

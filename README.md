@@ -1,4 +1,30 @@
-# selenium-tool
+# selenium-tool (改版)
+
+> **原项目**: [wangjinjing1/selenium-tool](https://github.com/wangjinjing1/selenium-tool)
+> 本仓库基于原项目进行功能扩展，保持与上游兼容。
+
+## 版本记录
+
+| 版本 | 更新内容 |
+|------|---------|
+| v1.1.0 | 新增 Cookie 可视化管理界面；支持手动添加/编辑/删除 Cookie；执行时自动合并手动 Cookie + CookieCloud Cookie |
+| v1.0.0 | 基于原项目初始版本 |
+
+## 改版说明
+
+本项目在原版基础上新增了以下功能：
+
+- **Cookie 可视化管理**：通过 Web 界面管理各站点的 Cookie，无需手动编辑 YAML
+  - 按 target 分组展示 Cookie
+  - 支持增删改查操作
+  - Cookie 持久化到 `cookie-store.json`
+- **Cookie 合并注入**：执行任务时自动合并手动配置的 Cookie 和 CookieCloud 拉取的 Cookie（手动优先）
+
+---
+
+# 以下为原项目 README
+
+---
 
 基于 Java、Spring Boot、Selenium 的定时浏览器任务工具，支持从 CookieCloud 拉取 Cookie，并通过 webhook 发送启动结果和异常告警。
 

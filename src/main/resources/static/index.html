@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>selenium-tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        .header { background: #1a1a2e; color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 18px; }
+        .container { max-width: 600px; margin: 60px auto; padding: 0 16px; }
+        .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; text-decoration: none; color: #333; display: block; }
+        .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+        .card h2 { font-size: 16px; margin-bottom: 6px; }
+        .card p { font-size: 13px; color: #888; }
+        .card .icon { font-size: 28px; margin-bottom: 8px; }
+        .status { background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .status h3 { font-size: 14px; color: #888; margin-bottom: 10px; }
+        .status-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+        .status-row .label { color: #666; }
+        .status-row .value { font-weight: 500; }
+        .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+        .dot-green { background: #52c41a; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 selenium-tool</h1>
+    </div>
+    <div class="container">
+        <div class="status">
+            <h3>服务状态</h3>
+            <div class="status-row">
+                <span class="label">状态</span>
+                <span class="value"><span class="dot dot-green"></span>运行中</span>
+            </div>
+            <div class="status-row">
+                <span class="label">手动触发</span>
+                <span class="value"><code>POST /api/automation/run</code></span>
+            </div>
+        </div>
+
+        <a class="card" href="/cookies.html">
+            <div class="icon">🍪</div>
+            <h2>Cookie 管理</h2>
+            <p>查看、添加、编辑和删除各站点的 Cookie 配置</p>
+        </a>
+
+        <a class="card" href="/api/automation/run" onclick="event.preventDefault(); fetch('/api/automation/run',{method:'POST'}).then(r=>r.json()).then(d=>alert('已触发: '+JSON.stringify(d)))">
+            <div class="icon">▶️</div>
+            <h2>手动执行</h2>
+            <p>立即触发一次浏览器自动化任务</p>
+        </a>
+    </div>
+</body>
+</html>
