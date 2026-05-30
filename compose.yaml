@@ -11,7 +11,7 @@ services:
       - "7900:7900"
 
   app:
-    build: https://github.com/pidanking/selenium-tool.git#main
+    build: https://github.com/pidanking/selenium-tool.git#v1.10.2
     container_name: selenium-tool
     restart: unless-stopped
     depends_on:
