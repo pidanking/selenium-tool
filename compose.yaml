@@ -11,7 +11,7 @@ services:
       - "7900:7900"
 
   app:
-    image: ghcr.io/pidanking/selenium-tool:v1.8.0
+    build: https://github.com/pidanking/selenium-tool.git#main
     container_name: selenium-tool
     restart: unless-stopped
     depends_on:
@@ -19,7 +19,6 @@ services:
     environment:
       TZ: Asia/Shanghai
       JAVA_OPTS: "-Xms128m -Xmx256m"
-      # Spring Boot 自动映射为 automation.browser.remote-url
       AUTOMATION_BROWSER_REMOTE_URL: "http://selenium:4444"
     volumes:
       - ./config/custom.yml:/app/config/custom.yml:ro
