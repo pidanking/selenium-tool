@@ -9,7 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
         .header { background: #1a1a2e; color: #fff; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
         .header h1 { font-size: 18px; }
-        .container { max-width: 600px; margin: 60px auto; padding: 0 16px; }
+        .container { max-width: 600px; margin: 40px auto; padding: 0 16px; }
         .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; text-decoration: none; color: #333; display: block; }
         .card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
         .card h2 { font-size: 16px; margin-bottom: 6px; }
@@ -22,6 +22,23 @@
         .status-row .value { font-weight: 500; }
         .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
         .dot-green { background: #52c41a; }
+        .dot-red { background: #ff4d4f; }
+        .dot-yellow { background: #faad14; }
+        /* Validate result panel */
+        .validate-panel { display: none; background: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .validate-panel.show { display: block; }
+        .validate-panel h3 { font-size: 15px; margin-bottom: 12px; }
+        .check-item { display: flex; align-items: flex-start; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .check-item:last-child { border-bottom: none; }
+        .check-icon { flex-shrink: 0; width: 18px; text-align: center; }
+        .check-name { font-weight: 500; min-width: 140px; }
+        .check-msg { color: #666; flex: 1; }
+        .btn-validate { display: inline-block; padding: 10px 24px; background: #4a6cf7; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+        .btn-validate:hover { background: #3a5ce7; }
+        .btn-validate:disabled { background: #ccc; cursor: not-allowed; }
+        .summary { padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-size: 14px; font-weight: 500; }
+        .summary-pass { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .summary-fail { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
     </style>
 </head>
 <body>
@@ -47,11 +64,61 @@
             <p>查看、添加、编辑和删除各站点的 Cookie 配置</p>
         </a>
 
+        <div class="card" onclick="runValidate()" style="cursor:pointer">
+            <div class="icon">🔍</div>
+            <h2>配置检查</h2>
+            <p>校验配置文件、Cookie 状态、CookieCloud 连通性、定时任务是否合规</p>
+        </div>
+
+        <div id="validatePanel" class="validate-panel"></div>
+
         <a class="card" href="/api/automation/run" onclick="event.preventDefault(); fetch('/api/automation/run',{method:'POST'}).then(r=>r.json()).then(d=>alert('已触发: '+JSON.stringify(d)))">
             <div class="icon">▶️</div>
             <h2>手动执行</h2>
             <p>立即触发一次浏览器自动化任务</p>
         </a>
     </div>
+
+    <script>
+        async function runValidate() {
+            const panel = document.getElementById('validatePanel');
+            panel.innerHTML = '<div style="text-align:center;padding:20px;color:#888">⏳ 检查中...</div>';
+            panel.classList.add('show');
+
+            try {
+                const resp = await fetch('/api/config/validate');
+                const data = await resp.json();
+                renderResult(data);
+            } catch (e) {
+                panel.innerHTML = '<div style="padding:20px;color:#ff4d4f">请求失败: ' + e.message + '</div>';
+            }
+        }
+
+        function renderResult(data) {
+            const panel = document.getElementById('validatePanel');
+            const checks = data.checks || [];
+            const summaryClass = data.passed ? 'summary-pass' : 'summary-fail';
+
+            let html = '<div class="summary ' + summaryClass + '">' + esc(data.summary || '') + '</div>';
+            html += '<h3>检查详情</h3>';
+
+            checks.forEach(c => {
+                const icon = c.passed ? '✅' : '❌';
+                html += '<div class="check-item">';
+                html += '<span class="check-icon">' + icon + '</span>';
+                html += '<span class="check-name">' + esc(c.name) + '</span>';
+                html += '<span class="check-msg">' + esc(c.message) + '</span>';
+                html += '</div>';
+            });
+
+            html += '<div style="text-align:right;margin-top:12px">';
+            html += '<button class="btn-validate" onclick="runValidate()">🔄 重新检查</button>';
+            html += '</div>';
+
+            panel.innerHTML = html;
+        }
+
+        function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+    </script>
 </body>
 </html>

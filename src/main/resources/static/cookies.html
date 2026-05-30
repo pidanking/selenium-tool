@@ -85,8 +85,11 @@
 
         <div class="actions-bar">
             <button class="btn btn-ghost" onclick="loadData()">🔄 刷新</button>
+            <button class="btn btn-ghost" onclick="runValidate()">🔍 配置检查</button>
             <button class="btn btn-primary" onclick="openAddModal()">+ 添加 Cookie</button>
         </div>
+
+        <div id="validatePanel" style="display:none;background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1)"></div>
 
         <div id="targetList"></div>
     </div>
@@ -163,6 +166,31 @@
                 renderTargets();
             } catch (e) {
                 toast('加载失败: ' + e.message, 'error');
+            }
+        }
+
+        async function runValidate() {
+            const panel = document.getElementById('validatePanel');
+            panel.style.display = 'block';
+            panel.innerHTML = '<div style="text-align:center;padding:12px;color:#888">⏳ 检查中...</div>';
+            try {
+                const resp = await fetch('/api/config/validate');
+                const data = await resp.json();
+                const checks = data.checks || [];
+                const cls = data.passed ? 'background:#f6ffed;color:#52c41a;border:1px solid #b7eb8f' : 'background:#fff2f0;color:#ff4d4f;border:1px solid #ffccc7';
+                let html = '<div style="padding:10px 14px;border-radius:6px;margin-bottom:10px;font-size:14px;font-weight:500;' + cls + '">' + esc(data.summary) + '</div>';
+                checks.forEach(c => {
+                    html += '<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #f0f0f0;font-size:13px;align-items:flex-start">';
+                    html += '<span style="flex-shrink:0">' + (c.passed ? '✅' : '❌') + '</span>';
+                    html += '<span style="font-weight:500;min-width:130px">' + esc(c.name) + '</span>';
+                    html += '<span style="color:#666;flex:1">' + esc(c.message) + '</span>';
+                    html += '</div>';
+                });
+                html += '<div style="text-align:right;margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="runValidate()">🔄 重新检查</button></div>';
+                panel.innerHTML = html;
+                loadData();
+            } catch (e) {
+                panel.innerHTML = '<div style="color:#ff4d4f;padding:8px">请求失败: ' + e.message + '</div>';
             }
         }
 
