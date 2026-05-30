@@ -7,6 +7,7 @@
 
 | 版本 | 更新内容 |
 |------|---------|
+| v1.5.0 | compose image 标签同步最新版本号 |
 | v1.4.0 | 修复 Docker Compose 部署问题：去掉 image 拉取、显式指定 build context 和 Dockerfile、安装 curl 健康检查依赖 |
 | v1.3.0 | 新增配置检查功能：校验 targets、Cookie 格式、CookieCloud 连通性、定时任务合规性；首页和 Cookie 管理页均支持一键检查 |
 | v1.2.0 | Docker Compose 部署优化；数据持久化卷；健康检查；资源限制；.dockerignore；config 示例独立目录 |

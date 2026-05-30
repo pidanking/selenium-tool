@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: pidanking/selenium-tool:v1.5.0
     container_name: selenium-tool
     restart: unless-stopped
     environment:
