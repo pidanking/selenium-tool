@@ -24,4 +24,4 @@ services:
       - ./config/custom.yml:/app/config/custom.yml:ro
       - ./data:/app/data
     ports:
-      - "8080:8080"
+      - "25464:8080"
