@@ -1,7 +1,11 @@
 .git
 .gitignore
+.gitattributes
+.github
 *.md
 data/
 .idea/
 *.iml
 target/
+config/
+compose.yaml

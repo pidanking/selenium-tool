@@ -69,36 +69,11 @@ public class AutomationProperties {
         @Min(1)
         private long pageStaySeconds = 10;
         private Duration pageLoadTimeout = Duration.ofMinutes(1);
-        /**
-         * 浏览器可执行文件路径；本地通常可不填，Docker 中建议显式指定。
-         */
-        private String binaryPath;
-        private String driverPath;
-        /**
-         * Selenium Manager 下载 ChromeDriver 时使用的代理地址，例如 http://127.0.0.1:7897。
-         * 不配置时将尝试自动检测系统代理；设为空字符串则禁用代理。
-         */
         private String proxy;
-        /**
-         * 远程 Selenium Grid 地址，例如 http://selenium:4444。
-         * 配置后使用 RemoteWebDriver 连接远程浏览器，不再启动本地 Chrome。
-         * Docker Compose 部署时自动通过环境变量 SELENIUM_REMOTE_URL 设置。
-         */
+        /** 远程 Selenium 地址，例如 http://selenium:4444 */
         private String remoteUrl;
         private List<String> arguments = new ArrayList<>();
-        /**
-         * 通过 Chrome 偏好设置（profile.managed_default_content_settings.images=2）
-         * 在浏览器层面完全禁止图片加载，比 CDP 拦截更彻底，适合完全不需要图片的场景。
-         * true：禁止所有图片（默认）；false：不干预图片加载。
-         */
         private boolean disableImages = true;
-        /**
-         * 通过 CDP (Chrome DevTools Protocol) 阻止指定后缀资源加载的后缀列表。
-         * 列表中每个条目为文件后缀（不含点号），例如 gif、png、jpg。
-         * 列表为空时不启用资源拦截功能。
-         * 示例：["gif", "png", "jpg", "jpeg", "webp", "svg", "bmp", "ico"]
-         */
-        private List<String> blockResourceSuffixes = new ArrayList<>();
     }
     @Data
     public static class CookieCloud {

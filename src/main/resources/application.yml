@@ -3,43 +3,20 @@ spring:
     name: selenium-tool
   main:
     banner-mode: "off"
-  profiles:
-    active: dev
   config:
     import:
-      # 代理和目标站点配置已拆分到 custom.yml，方便单独修改
-      # JAR 同级目录放置同名文件可覆盖 classpath 中的默认值
       - "classpath:custom.yml"
       - "optional:file:/app/config/custom.yml"
-# 自动化任务主配置
+
 automation:
-  # 启动应用后是否立刻执行一次任务
   run-on-startup: true
   schedule:
-    # 定时任务使用的时区
     zone: "Asia/Shanghai"
   browser:
-    # true 表示无界面运行，服务器和 Docker 环境建议开启
-    headless: false
-    # Linux 容器环境通常需要开启
+    headless: true
     no-sandbox: true
-    # Docker 中共享内存较小时建议开启
     disable-dev-shm-usage: true
-    # 每个页面访问成功打开后的停留时间，单位秒
     page-stay-seconds: 3
-    # 页面加载超时时间
     page-load-timeout: 2m
-    driver-path:
-    # 额外的浏览器启动参数
-    arguments:
-      - "--window-size=1400,900"
-      - "--disable-gpu"
-    # 通过 Chrome prefs 在浏览器层面完全禁止图片加载，比 CDP 拦截更彻底
-    # true：禁止所有图片（默认）；false：不干预
-    disable-images: true
-    # 通过 CDP 阻止指定后缀的资源加载，列表为空则不启用拦截
-    # 示例后缀：gif、png、jpg、jpeg、webp、svg、bmp、ico
-    block-resource-suffixes:
   cookie-cloud:
-    # 缓存文件名
-    cache-file: "cookiecloud-cache.json"
+    cache-file: "/app/data/cookiecloud-cache.json"
