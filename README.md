@@ -7,6 +7,7 @@
 
 | 版本 | 更新内容 |
 |------|---------|
+| v1.6.0 | 绿联 NAS 兼容修复：简化 Dockerfile、entrypoint 脚本、.gitattributes 换行符规范化、去掉 image 字段 |
 | v1.5.0 | compose image 标签同步最新版本号 |
 | v1.4.0 | 修复 Docker Compose 部署问题：去掉 image 拉取、显式指定 build context 和 Dockerfile、安装 curl 健康检查依赖 |
 | v1.3.0 | 新增配置检查功能：校验 targets、Cookie 格式、CookieCloud 连通性、定时任务合规性；首页和 Cookie 管理页均支持一键检查 |

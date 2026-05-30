@@ -1,0 +1,6 @@
+# 确保所有文本文件使用 LF 换行（NAS Docker 兼容）
+* text=auto eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
+*.java text eol=lf
+*.html text eol=lf
