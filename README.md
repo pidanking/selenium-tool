@@ -7,6 +7,7 @@
 
 | 版本 | 更新内容 |
 |------|---------|
+| v1.8.0 | 架构重构：拆分 Selenium 和应用为两个容器；应用镜像从 3.2GB 降至 ~200MB；compose 直接拉官方镜像 |
 | v1.7.0 | 重命名为 compose.yaml（Docker 新标准）；新增部署诊断脚本 check.sh |
 | v1.6.0 | 绿联 NAS 兼容修复：简化 Dockerfile、entrypoint 脚本、.gitattributes 换行符规范化、去掉 image 字段 |
 | v1.5.0 | compose image 标签同步最新版本号 |

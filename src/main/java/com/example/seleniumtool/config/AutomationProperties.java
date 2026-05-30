@@ -79,6 +79,12 @@ public class AutomationProperties {
          * 不配置时将尝试自动检测系统代理；设为空字符串则禁用代理。
          */
         private String proxy;
+        /**
+         * 远程 Selenium Grid 地址，例如 http://selenium:4444。
+         * 配置后使用 RemoteWebDriver 连接远程浏览器，不再启动本地 Chrome。
+         * Docker Compose 部署时自动通过环境变量 SELENIUM_REMOTE_URL 设置。
+         */
+        private String remoteUrl;
         private List<String> arguments = new ArrayList<>();
         /**
          * 通过 Chrome 偏好设置（profile.managed_default_content_settings.images=2）
