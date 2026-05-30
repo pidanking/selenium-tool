@@ -1,24 +1,20 @@
 services:
   selenium-tool:
-    build: .
-    image: pidanking/selenium-tool:v1.1.0
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: selenium-tool
     restart: unless-stopped
     environment:
       TZ: Asia/Shanghai
       SE_VNC_PASSWORD: admin
-      # JVM 调优，按需调整
       JAVA_OPTS: "-Xms256m -Xmx512m"
     volumes:
-      # 配置文件（只读挂载，修改后重启生效）
       - ./config/custom.yml:/app/config/custom.yml:ro
-      # 数据持久化
       - ./data/cookie-store.json:/app/data/cookie-store.json
       - ./data/cookiecloud-cache.json:/app/data/cookiecloud-cache.json
     ports:
-      # Web 管理界面 + API
       - "8080:8080"
-      # noVNC 远程桌面（可选，不需要可注释）
       - "7900:7900"
     healthcheck:
       test: ["CMD", "curl", "-sf", "http://localhost:8080/api/cookies"]
@@ -31,9 +27,3 @@ services:
         limits:
           memory: 1G
           cpus: "1.0"
-    networks:
-      - selenium-net
-
-networks:
-  selenium-net:
-    driver: bridge

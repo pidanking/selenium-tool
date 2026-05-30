@@ -16,6 +16,9 @@ WORKDIR /app
 ENV TZ=Asia/Shanghai \
     JAVA_OPTS=""
 
+# 安装 curl 供健康检查使用
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /build/target/selenium-tool-0.0.1-SNAPSHOT.jar /app/app.jar
 
 # 数据目录，用于挂载持久化文件
