@@ -39,6 +39,11 @@ public class CookieStoreService {
     }
 
     private Path resolveStoreFile() {
+        // Docker 中优先使用 /app/data/ 目录（已挂载持久化卷）
+        Path dockerPath = Paths.get("/app/data/cookie-store.json");
+        if (Files.exists(dockerPath.getParent())) {
+            return dockerPath;
+        }
         Path path = Paths.get(DEFAULT_STORE_FILE);
         return path.isAbsolute() ? path : path.toAbsolutePath().normalize();
     }

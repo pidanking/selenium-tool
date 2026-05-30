@@ -1,0 +1,23 @@
+automation:
+  schedule:
+    # Spring 六段式 cron，例如每天 10 点 0 分执行一次
+    cron: "0 0 10 * * *"
+  browser:
+    # Selenium Manager 下载 chromedriver 及 Chrome 浏览器访问 URL 时使用的代理地址
+    # 例如 http://127.0.0.1:7897；不配置时将禁用代理
+    proxy:
+  cookie-cloud:
+    # cookieCloud 服务根地址，代码会自动拼接 /cookiecloud/get/{key}；未配置时 CookieCloud 功能自动禁用
+    url: "https://mp域名"
+    # CookieCloud 访问 key
+    key: "CookieCloud 访问 key"
+    # CookieCloud 访问密码
+    password: "CookieCloud 访问密码"
+    # 缓存文件路径（Docker 中建议保持默认 /app/data/）
+    cache-file: "/app/data/cookiecloud-cache.json"
+  startup-notification:
+    # webhook通知地址, 例如企业微信的webhook地址，不配置则不发送通知
+    webhook-url:
+  targets:
+    # 按顺序逐个访问的目标站点列表
+    - url: "https://www.baidu.com/"

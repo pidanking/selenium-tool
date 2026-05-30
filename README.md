@@ -7,6 +7,7 @@
 
 | 版本 | 更新内容 |
 |------|---------|
+| v1.2.0 | Docker Compose 部署优化；数据持久化卷；健康检查；资源限制；.dockerignore；config 示例独立目录 |
 | v1.1.0 | 新增 Cookie 可视化管理界面；支持手动添加/编辑/删除 Cookie；执行时自动合并手动 Cookie + CookieCloud Cookie |
 | v1.0.0 | 基于原项目初始版本 |
 
@@ -19,6 +20,44 @@
   - 支持增删改查操作
   - Cookie 持久化到 `cookie-store.json`
 - **Cookie 合并注入**：执行任务时自动合并手动配置的 Cookie 和 CookieCloud 拉取的 Cookie（手动优先）
+
+## Docker Compose 部署
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/pidanking/selenium-tool.git
+cd selenium-tool
+
+# 2. 编辑配置
+cp config/custom.yml config/custom.yml.bak
+vim config/custom.yml   # 填入你的站点、CookieCloud、webhook 等配置
+
+# 3. 启动
+docker compose up -d --build
+
+# 4. 查看日志
+docker compose logs -f
+```
+
+### 目录结构
+
+```
+selenium-tool/
+├── config/
+│   └── custom.yml          # 个性化配置（挂载到容器，只读）
+├── data/
+│   ├── cookie-store.json   # 手动配置的 Cookie（持久化）
+│   └── cookiecloud-cache.json  # CookieCloud 缓存（持久化）
+├── docker-compose.yml
+└── Dockerfile
+```
+
+### 端口说明
+
+| 端口 | 用途 |
+|------|------|
+| 8080 | Web 管理界面 + API |
+| 7900 | noVNC 远程桌面（可选） |
 
 ---
 
